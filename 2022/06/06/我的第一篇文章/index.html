@@ -6,7 +6,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>  redis支持事务的ACID吗 |    liguangling的博客</title>
+  <title>  我的第一篇文章 |    liguangling的博客</title>
   <meta name="description" content="A minimalist theme for hexo.">
   <!-- 标签页图标 -->
   
@@ -90,7 +90,7 @@
 <article class="post-inner">
   <div class="post-content-outer">
     <div class="post-intro">
-      <div class="post-title animate__animated  animate__fadeInUp">redis支持事务的ACID吗</div>
+      <div class="post-title animate__animated  animate__fadeInUp">我的第一篇文章</div>
       <div class="meta-intro animate__animated  animate__fadeInUp">Jun 06 2022</div>
       
     </div>
@@ -101,33 +101,7 @@
       <div class="post-content-main animate__animated  animate__fadeInUp">
         <!-- top型目录 -->
         
-        <h3 id="什么是事务的ACID？"><a href="#什么是事务的ACID？" class="headerlink" title="什么是事务的ACID？"></a>什么是事务的ACID？</h3><p>事务（Transaction）是并发控制单位，一个操作序列组合而成，这些操作要么都执行，要么都不执行。「是一个不可分割的工作单位」。</p>
-<p>事务在执行时，会提供专门的属性保证：</p>
-<ul>
-<li>原子性（Atomicity）：一个事务的多个操作必须完成，或者都不完成。</li>
-<li>一致性（Consistency）：事务执行结束后，数据库的完整性约束没有被破坏，事务执行的前后顺序都是合法数据状态。</li>
-<li>隔离性（Isolation）：事务内部的操作与其他事务是隔离的，并发执行的各个事务之间不能互相干扰。</li>
-<li>持久性（Durability）：事务一旦提交，所有的修改将永久的保存到数据库中，即使系统崩溃重启后数据也不会丢失。</li>
-</ul>
-<p>ps：数据库的完整性约束包括但不限于：</p>
-<ul>
-<li>实体完整性（如行的主键存在且唯一）；</li>
-<li>列完整性（如字段的类型、大小、长度要符合要求）</li>
-<li>外键约束；</li>
-<li>用户自定义完整性（如转账前后，两个账户余额的和应该不变）。</li>
-</ul>
-<h3 id="Redis-如何实现事务？"><a href="#Redis-如何实现事务？" class="headerlink" title="Redis 如何实现事务？"></a>Redis 如何实现事务？</h3><p>MULTI、EXEC、DISCARD 和 WATCH 命令是 Redis 实现事务的的基础。</p>
-<ol>
-<li>开启事务；</li>
-<li>命令入队； </li>
-<li>执行事务或丢弃；</li>
-</ol>
-<ul>
-<li>客户端通过 MULTI 命令显式地表示开启一个事务，随后的命令将排队缓存，并不会实际执行。</li>
-<li>客户端把事务中的要执行的一系列指令发送到服务端。需要注意的是，虽然指令发送到服务端，但是 Redis实例只是把这一系列指令暂存在一个命令队列中，并不会立刻执行。</li>
-<li>客户端向服务端发送提交或者丢弃事务的命令，让 Redis执行第二步中发送的具体指令或者清空队列命令，放弃执行。Redis 只需在调用 EXEC 时，即可安排队列命令执行。也可通过 DISCARD 丢弃保存在队列中的命令。</li>
-</ul>
-
+        
         <!-- 分类文章 -->
         
       </div>
