@@ -6,7 +6,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>  redis支持事务的ACID吗 |    liguangling的博客</title>
+  <title>  Redis支持事务id吗？ |    liguangling的博客</title>
   <meta name="description" content="A minimalist theme for hexo.">
   <!-- 标签页图标 -->
   
@@ -90,7 +90,7 @@
 <article class="post-inner">
   <div class="post-content-outer">
     <div class="post-intro">
-      <div class="post-title animate__animated  animate__fadeInUp">redis支持事务的ACID吗</div>
+      <div class="post-title animate__animated  animate__fadeInUp">redis支持事务id吗？</div>
       <div class="meta-intro animate__animated  animate__fadeInUp">Jun 06 2022</div>
       
     </div>
@@ -127,6 +127,113 @@
 <li>客户端把事务中的要执行的一系列指令发送到服务端。需要注意的是，虽然指令发送到服务端，但是 Redis实例只是把这一系列指令暂存在一个命令队列中，并不会立刻执行。</li>
 <li>客户端向服务端发送提交或者丢弃事务的命令，让 Redis执行第二步中发送的具体指令或者清空队列命令，放弃执行。Redis 只需在调用 EXEC 时，即可安排队列命令执行。也可通过 DISCARD 丢弃保存在队列中的命令。</li>
 </ul>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/7082764785944615835E3707B9631F91" >
+        </sapn>
+      </p>
+<p>可以看到每个读写指令执行后的返回结果都是 QUEUED，表示写操作都被暂存到了命令队列，还没有实际执行。当执行了 EXEC 命令，就可以看到具体每个指令的响应数据。</p>
+<p>通过 MULTI 和 DISCARD丢弃队列命令：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/D704A64301AE472E94301BB7FACAE08F" >
+        </sapn>
+      </p>
+<h3 id="Redis-事务满足-ACID吗？"><a href="#Redis-事务满足-ACID吗？" class="headerlink" title="Redis 事务满足 ACID吗？"></a>Redis 事务满足 ACID吗？</h3><p>Redis 事务可以一次执行多个命令， 并且带有以下三个重要的保证：</p>
+<ol>
+<li>批量指令在执行 EXEC 命令之前会放入队列暂存；</li>
+<li>收到 EXEC 命令后进入事务执行，事务中任意命令执行失败，其余的命令依然被执行；</li>
+<li>事务执行过程中，其他客户端提交的命令不会插入到当前命令执行的序列中。</li>
+</ol>
+<h4 id="原子性"><a href="#原子性" class="headerlink" title="原子性"></a>原子性</h4><h4 id="如果事务执行过程中发生错误了，原子性能保证么？"><a href="#如果事务执行过程中发生错误了，原子性能保证么？" class="headerlink" title="如果事务执行过程中发生错误了，原子性能保证么？"></a>如果事务执行过程中发生错误了，原子性能保证么？</h4><p>在事务期间，可能遇到两种命令错误：</p>
+<ul>
+<li>在执行 EXEC 命令前，发送的指令本身就错误。如下：</li>
+</ul>
+<ol>
+<li>参数数量错误；</li>
+<li>命令名称错误，使用了不存在的命令；</li>
+<li>内存不足（Redis 实例使用 maxmemory指令配置内存限制）。</li>
+</ol>
+<p>在命令入队时，Redis 就会报错并且记录下这个错误。此时，我们还能继续提交命令操作。等到执行了 EXEC命令之后，Redis 就会拒绝执行所有提交的命令操作，返回事务失败的结果。<br>这样一来，事务中的所有命令都不会再被执行了，保证了原子性。</p>
+<p>如下是指令入队发生错误，导致事务失败的例子：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/31174C8142274844B35D6582CAF5C589" >
+        </sapn>
+      </p>
+<ul>
+<li>在执行 EXEC 命令后，命令可能会失败：</li>
+</ul>
+<ol>
+<li>命令和操作的数据类型不匹配（对 String 类型 的 value 执行了 List 列表操作）；</li>
+<li>在执行事务的 EXEC 命令时。Redis 实例发生了故障导致事务执行失败。</li>
+</ol>
+<p>事务操作入队时，命令和操作的数据类型不匹配，但 Redis 实例没有检查出错误。但是，在执行完 EXEC 命令以后，Redis 实际执行这些指令，就会报错。Redis 虽然会对错误指令报错，但是事务依然会把正确的命令执行完，这时候事务的原子性就无法保证了！</p>
+<ul>
+<li>在执行事务的 EXEC 命令时。Redis 实例发生了故障导致事务执行失败。</li>
+</ul>
+<p>如果 Redis 开启了 AOF 日志，那么，只会有部分的事务操作被记录到 AOF 日志中。我们需要使用 redis-check-aof 工具检查 AOF日志文件，这个工具可以把未完成的事务操作从 AOF 文件中去除。这样一来，我们使用AOF恢复实例后，事务操作不会再被执行，从而保证了原子性。</p>
+<h4 id="为什么-Redis-不支持回滚？"><a href="#为什么-Redis-不支持回滚？" class="headerlink" title="为什么 Redis 不支持回滚？"></a>为什么 Redis 不支持回滚？</h4><p>其实，Redis 中并没有提供回滚机制。虽然 Redis 提供了 DISCARD 命令。但是，这个命令只能用来主动放弃事务执行，把暂存的命令队列清空，起不到回滚的效果。</p>
+<h4 id="简单总结："><a href="#简单总结：" class="headerlink" title="简单总结："></a>简单总结：</h4><ul>
+<li>命令入队时就报错，会放弃事务执行，保证原子性；</li>
+<li>命令入队时没报错，实际执行时报错，不保证原子性；</li>
+<li>EXEC 命令执行时实例故障，如果开启了 AOF 日志，可以保证原子性。</li>
+</ul>
+<h4 id="一致性"><a href="#一致性" class="headerlink" title="一致性"></a>一致性</h4><p>一致性会受到错误命令、实例故障发生时机的影响，按照命令出错实例故障两个维度的发生时机，可以分三种情况分析。</p>
+<ol>
+<li>EXEC 执行前，入队报错：事务会被放弃执行，所以可以保证一致性。</li>
+<li>EXEC 执行后，实际执行时报错：有错误的执行不会执行，正确的指令可以正常执行，一致性可以保证。</li>
+<li>EXEC 执行时，实例故障：实例故障后会进行重启，这就和数据恢复的方式有关了，我们要根据实例是否开启了 RDB 或 AOF 来分情况讨论下。如果我们没有开启 RDB 或 AOF，那么，实例故障重启后，数据都没有了，数据库是一致的。如果我们使用了 RDB 快照，因为 RDB 快照不会在事务执行时执行。所以，事务命令操作的结果不会被保存到 RDB 快照中，使用RDB快照进行恢复时，数据库里的数据也是一致的。如果我们使用了 AOF 日志，而事务操作还没有被记录到AOF日志时，实例就发生了故障，那么，使用 AOF 日志恢复的数据库数据是一致的。如果只有部分操作被记录到了AOF 日志，我们可以使用redis-check-aof清除事务中已经完成的操作，数据库恢复后也是一致的。</li>
+</ol>
+<h4 id="隔离性"><a href="#隔离性" class="headerlink" title="隔离性"></a>隔离性</h4><p>事务执行又可以分成命令入队（EXEC 命令执行前）和命令实际执行（EXEC 命令执行后）两个阶段。</p>
+<p>所以在并发执行的时候我们针对这两个阶段分两种情况分析：</p>
+<ul>
+<li>并发操作在 EXEC 命令前执行，隔离性需要通过 WATCH 机制保证；</li>
+<li>并发操作在 EXEC 命令之后，隔离性可以保证。</li>
+</ul>
+<h4 id="什么是-WATCH-机制？"><a href="#什么是-WATCH-机制？" class="headerlink" title="什么是 WATCH 机制？"></a>什么是 WATCH 机制？</h4><p>我们重点来看第一种情况：一个事务的EXEC命令还没有执行时，事务的命令操作是暂存在命令队列中的。此时，如果有其它的并发操作，同样的key被修改，需要看事务是否使用了 WATCH 机制。</p>
+<p>WATCH 机制的作用是：在事务执行前，监控一个或多个键的值变化情况，当事务调用 EXEC 命令执行时，WATCH 机制会先检查监控的键是否被其它客户端修改了。</p>
+<p>如果修改了，就放弃事务执行，避免事务的隔离性被破坏。</p>
+<p>同时，客户端可以再次执行事务，此时，如果没有并发修改事务数据的操作了，事务就能正常执行，隔离性也得到了保证。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/A23EEC083D5A497CAC41FB45CBC5CF26" >
+        </sapn>
+      </p>
+<p>如果没有 WATCH 机制， 在 EXEC 命令执行前的并发操作对数据读写。</p>
+<p>当执行 EXEC 的时候，事务内部要操作的数据已经改变，Redis 并没有做到事务之间的隔离。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/925AAE5CEB73406AB3033CBC0C8CB097" >
+        </sapn>
+      </p>
+<p>第二种情况，因为 Redis 是用单线程执行命令，而且，EXEC 命令执行后，Redis 会保证先把命令队列中的所有命令执行完再执行之后的指令。</p>
+<p>所以，在这种情况下，并发操作不会破坏事务的隔离性。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/B970FB7BCEFA457B87B4125382EEE70C" >
+        </sapn>
+      </p>
+<h4 id="持久性"><a href="#持久性" class="headerlink" title="持久性"></a>持久性</h4><p>如果 Redis 没有使用 RDB 或 AOF，那么事务的持久化属性肯定得不到保证。</p>
+<p>如果 Redis 使用了 RDB 模式，那么，在一个事务执行后，而下一次的 RDB 快照还未执行前，如果发生了实例宕机，数据丢失，这种情况下，事务修改的数据也是不能保证持久化的。</p>
+<p>如果 Redis 采用了 AOF 模式，因为 AOF 模式的三种配置选项 no、everysec 和 always 都会存在数据丢失的情况。</p>
+<p>所以，事务的持久性属性也还是得不到保证。</p>
+<p>不管 Redis 采用什么持久化模式，事务的持久性属性是得不到保证的。</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>Redis 具备了一定的原子性，但不支持回滚。</li>
+<li>Redis 具备 ACID 中一致性的概念。</li>
+<li>Redis 具备隔离性。</li>
+<li>Redis 无法保证持久性。</li>
+</ul>
+<p>Redis 的事务机制可以保证一致性和隔离性，但是无法保证持久性。</p>
+<p>不过，因为 Redis 本身是内存数据库，持久性并不是一个必须的属性，我们更加关注的还是原子性、一致性和隔离性这三个属性。</p>
+<p>原子性的情况比较复杂，当事务中使用的命令语法有误时，原子性得不到保证，在其它情况下，事务都可以原子性执行。</p>
 
         <!-- 分类文章 -->
         
