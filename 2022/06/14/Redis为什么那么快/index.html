@@ -1,0 +1,288 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>  Redis为什么那么快？ |    liguangling的博客</title>
+  <meta name="description" content="A minimalist theme for hexo.">
+  <!-- 标签页图标 -->
+  
+
+  <!-- 图标库 -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.2.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- 动画库 -->
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fushaolei/cdn-white@1.0/css/animate.css"/>
+  
+  <!-- css文件 -->
+  
+<link rel="stylesheet" href="/css/white.css">
+
+  <!-- 代码高亮 -->
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+
+<div class="menu-outer">
+    <div class="menu-inner">
+      <div class="menu-site-name  animate__animated  animate__fadeInUp">
+        <a href="/">
+          liguangling的博客
+        </a>
+        
+      </div>
+      <div class="menu-group">
+        <ul class="menu-ul">
+        
+          <a href="/archives" class="nav-link">
+            <li class="menu-li  animate__animated  animate__fadeInUp">
+              BLOG
+            </li>
+          </a>
+        
+        
+        
+          <li class="menu-li animate__animated  animate__fadeInUp" id="mobile-menu">
+            <i class="ri-menu-line"></i>
+          </li>
+        
+        </ul>
+
+      </div>
+
+    </div>
+</div>
+<div id="mobile-main" class="animate__animated  animate__fadeIn">
+  <div class="mobile-menu-inner">
+    <div class="mobile-menu-site-name animate__animated  animate__fadeInUp">
+      <a href="/">
+        liguangling的博客
+      </a>
+    </div>
+    <div class="mobile-menu-group" id="mobile-close">
+      <i class="ri-close-line"></i>
+    </div>
+
+  </div>
+
+  <div class="mobile-menu-div">
+  
+    <a href="/archives" class="mobile-nav-link">
+      <div class="mobile-menu-child animate__animated  animate__fadeInUp">
+        <span>BLOG</span>
+      </div>
+    </a>
+  
+  
+  </div>
+
+
+</div>
+
+<div class="body-outer">
+  <div class="body-inner">
+    
+<article class="post-inner">
+  <div class="post-content-outer">
+    <div class="post-intro">
+      <div class="post-title animate__animated  animate__fadeInUp">Redis为什么那么快？</div>
+      <div class="meta-intro animate__animated  animate__fadeInUp">Jun 14 2022</div>
+      
+    </div>
+    <div class="post-content-inner">
+      <div class="post-content-inner-space">
+
+      </div>
+      <div class="post-content-main animate__animated  animate__fadeInUp">
+        <!-- top型目录 -->
+        
+        <h4 id="Redis为什么那么快？"><a href="#Redis为什么那么快？" class="headerlink" title="Redis为什么那么快？"></a>Redis为什么那么快？</h4><h5 id="完全基于内存实现"><a href="#完全基于内存实现" class="headerlink" title="完全基于内存实现"></a>完全基于内存实现</h5><p>不论读写操作都是在内存上完成的，我们分别对比下内存操作与磁盘操作的差异。</p>
+<p>磁盘调用栈图</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/B4CEC477274C4DB49EF17770DDB43F4C" >
+        </sapn>
+      </p>
+<p>内存操作</p>
+<p>内存直接由 CPU 控制，也就是 CPU 内部集成的内存控制器，所以说内存是直接与 CPU 对接，享受与 CPU 通信的最优带宽。</p>
+<p>Redis 将数据存储在内存中，读写操作不会因为磁盘的 IO 速度限制，所以速度飞一般的感觉！</p>
+<h5 id="高效的数据结构"><a href="#高效的数据结构" class="headerlink" title="高效的数据结构"></a>高效的数据结构</h5><p>这里所说的数据结构并不是 Redis 提供给我们使用的 5 种数据类型：String、List、Hash、Set、SortedSet。</p>
+<p>在 Redis 中，常用的 5 种数据类型和应用场景如下：</p>
+<ul>
+<li>String： 缓存、计数器、分布式锁等。</li>
+<li>List： 链表、队列、微博关注人时间轴列表等。</li>
+<li>Hash： 用户信息、Hash 表等。</li>
+<li>Set： 去重、赞、踩、共同好友等。</li>
+<li>Zset： 访问量排行榜、点击量排行榜等。</li>
+</ul>
+<p>上面的应该叫做 Redis 支持的数据类型，也就是数据的保存形式。「码哥字节」要说的是针对这 5 种数据类型，底层都运用了哪些高效的数据结构来支持。</p>
+<p>不同数据类型使用不同的数据结构速度才得以提升。每种数据类型都有一种或者多种数据结构来支撑，底层数据结构有 6 种。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/B40EDBA1B8FF417DA96660152B5EE9D0" >
+        </sapn>
+      </p>
+<p>Redis hash 字典</p>
+<p>Redis 整体就是一个 哈希表来保存所有的键值对，无论数据类型是 5 种的任意一种。哈希表，本质就是一个数组，每个元素被叫做哈希桶，不管什么数据类型，每个桶里面的 entry 保存着实际具体值的指针。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/C08FC874D3474BC2A9113CD71F3BD782" >
+        </sapn>
+      </p>
+<p>整个数据库就是一个全局哈希表，而哈希表的时间复杂度是 O(1)，只需要计算每个键的哈希值，便知道对应的哈希桶位置，定位桶里面的 entry 找到对应数据，这个也是 Redis 快的原因之一。</p>
+<p>那 Hash 冲突怎么办？</p>
+<p>当写入 Redis 的数据越来越多的时候，哈希冲突不可避免，会出现不同的 key 计算出一样的哈希值。</p>
+<p>Redis 通过链式哈希解决冲突：也就是同一个 桶里面的元素使用链表保存。但是当链表过长就会导致查找性能变差可能，所以 Redis 为了追求快，使用了两个全局哈希表。用于 rehash 操作，增加现有的哈希桶数量，减少哈希冲突。</p>
+<p>开始默认使用 hash 表 1 保存键值对数据，哈希表 2 此刻没有分配空间。当数据越来多触发 rehash 操作，则执行以下操作：</p>
+<ul>
+<li>给 hash 表 2 分配更大的空间；</li>
+<li>将 hash 表 1 的数据重新映射拷贝到 hash 表 2 中；</li>
+<li>释放 hash 表 1 的空间。</li>
+</ul>
+<p>值得注意的是，将 hash 表 1 的数据重新映射到 hash 表 2 的过程中并不是一次性的，这样会造成 Redis 阻塞，无法提供服务。</p>
+<p>而是采用了渐进式 rehash，每次处理客户端请求的时候，先从 hash 表 1 中第一个索引开始，将这个位置的 所有数据拷贝到 hash 表 2 中，就这样将 rehash 分散到多次请求过程中，避免耗时阻塞。</p>
+<p>SDS 简单动态字符</p>
+<p>字符串结构使用最广泛，通常我们用于缓存登陆后的用户信息，key &#x3D; userId，value &#x3D; 用户信息 JSON 序列化成字符串。</p>
+<p>C 语言字符串结构与 SDS 字符串结构对比图如下所示：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/717E051490A64DFE84EA56F70ED63F05" >
+        </sapn>
+      </p>
+<p>SDS 与 C 字符串区别<br>O(1) 时间复杂度获取字符串长度</p>
+<p>C 语言字符串布吉路长度信息，需要遍历整个字符串时间复杂度为 O(n)，C 字符串遍历时遇到 ‘\0’ 时结束。</p>
+<p>SDS 中 len 保存这字符串的长度，O(1) 时间复杂度。</p>
+<p>空间预分配</p>
+<p>SDS 被修改后，程序不仅会为 SDS 分配所需要的必须空间，还会分配额外的未使用空间。</p>
+<p>分配规则如下：如果对 SDS 修改后，len 的长度小于 1M，那么程序将分配和 len 相同长度的未使用空间。举个例子，如果 len&#x3D;10，重新分配后，buf 的实际长度会变为 10(已使用空间)+10(额外空间)+1(空字符)&#x3D;21。如果对 SDS 修改后 len 长度大于 1M，那么程序将分配 1M 的未使用空间。</p>
+<p>惰性空间释放</p>
+<p>当对 SDS 进行缩短操作时，程序并不会回收多余的内存空间，而是使用 free 字段将这些字节数量记录下来不释放，后面如果需要 append 操作，则直接使用 free 中未使用的空间，减少了内存的分配。</p>
+<p>二进制安全</p>
+<p>在 Redis 中不仅可以存储 String 类型的数据，也可能存储一些二进制数据。</p>
+<p>二进制数据并不是规则的字符串格式，其中会包含一些特殊的字符如 ‘\0’，在 C 中遇到 ‘\0’ 则表示字符串的结束，但在 SDS 中，标志字符串结束的是 len 属性。</p>
+<p>zipList 压缩列表<br>压缩列表是 List 、hash、 sorted Set 三种数据类型底层实现之一。</p>
+<p>当一个列表只有少量数据的时候，并且每个列表项要么就是小整数值，要么就是长度比较短的字符串，那么 Redis 就会使用压缩列表来做列表键的底层实现。</p>
+<p>ziplist 是由一系列特殊编码的连续内存块组成的顺序型的数据结构，ziplist 中可以包含多个 entry 节点，每个节点可以存放整数或者字符串。</p>
+<p>ziplist 在表头有三个字段 zlbytes、zltail 和 zllen，分别表示列表占用字节数、列表尾的偏移量和列表中的 entry 个数；压缩列表在表尾还有一个 zlend，表示列表结束。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/653D1614CDDA4A0C9691BE8FB9424405" >
+        </sapn>
+      </p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/D020321F8C2341E996CB8A2F07D08884" >
+        </sapn>
+      </p>
+<p>如果我们要查找定位第一个元素和最后一个元素，可以通过表头三个字段的长度直接定位，复杂度是 O(1)。而查找其他元素时，就没有这么高效了，只能逐个查找，此时的复杂度就是 O(N)</p>
+<p>双端列表<br>Redis List 数据类型通常被用于队列、微博关注人时间轴列表等场景。不管是先进先出的队列，还是先进后出的栈，双端列表都很好的支持这些特性。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/632CD4461C204794848EBD090FD39D19" >
+        </sapn>
+      </p>
+<p>Redis 的链表实现的特性可以总结如下：</p>
+<ul>
+<li>双端：链表节点带有 prev 和 next 指针，获取某个节点的前置节点和后置节点的复杂度都是 O（1）。</li>
+<li>无环：表头节点的 prev 指针和表尾节点的 next 指针都指向 NULL，对链表的访问以 NULL 为终点。</li>
+<li>带表头指针和表尾指针：通过 list 结构的 head 指针和 tail 指针，程序获取链表的表头节点和表尾节点的复杂度为 O（1）。</li>
+<li>带链表长度计数器：程序使用 list 结构的 len 属性来对 list 持有的链表节点进行计数，程序获取链表中节点数量的复杂度为 O（1）。</li>
+<li>多态：链表节点使用 void* 指针来保存节点值，并且可以通过 list 结构的 dup、free、match 三个属性为节点值设置类型特定函数，所以链表可以用于保存各种不同类型的值。<br>后续版本对列表数据结构进行了改造，使用 quicklist 代替了 ziplist 和 linkedlist。</li>
+</ul>
+<p>quicklist 是 ziplist 和 linkedlist 的混合体，它将 linkedlist 按段切分，每一段使用 ziplist 来紧凑存储，多个 ziplist 之间使用双向指针串接起来。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/8491F39F12924DAB9CBEB370315E2AC3" >
+        </sapn>
+      </p>
+<p>这也是为何 Redis 快的原因，不放过任何一个可以提升性能的细节。</p>
+<p>skipList 跳跃表<br>sorted set 类型的排序功能便是通过「跳跃列表」数据结构来实现。</p>
+<p>跳跃表（skiplist）是一种有序数据结构，它通过在每个节点中维持多个指向其他节点的指针，从而达到快速访问节点的目的。</p>
+<p>跳跃表支持平均 O（logN）、最坏 O（N）复杂度的节点查找，还可以通过顺序性操作来批量处理节点。</p>
+<p>跳表在链表的基础上，增加了多层级索引，通过索引位置的几个跳转，实现数据的快速定位，如下图所示：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/483F216561BC432DBCFF521DDC9419A8" >
+        </sapn>
+      </p>
+<p>当需要查找 40 这个元素需要经历 三次查找。</p>
+<p>整数数组（intset）<br>当一个集合只包含整数值元素，并且这个集合的元素数量不多时，Redis 就会使用整数集合作为集合键的底层实现。结构如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/AD85D54373934793B200B0927FA5738C" >
+        </sapn>
+      </p>
+<p>contents 数组是整数集合的底层实现：整数集合的每个元素都是 contents 数组的一个数组项（item），各个项在数组中按值的大小从小到大有序地排列，并且数组中不包含任何重复项。length 属性记录了整数集合包含的元素数量，也即是 contents 数组的长度。</p>
+<p>合理的数据编码<br>Redis 使用对象（redisObject）来表示数据库中的键值，当我们在 Redis 中创建一个键值对时，至少创建两个对象，一个对象是用做键值对的键对象，另一个是键值对的值对象。</p>
+<p>例如我们执行 SET MSG XXX 时，键值对的键是一个包含了字符串“MSG“的对象，键值对的值对象是包含字符串”XXX”的对象。</p>
+
+        <!-- 分类文章 -->
+        
+      </div>
+      <div class="post-content-inner-space">
+        
+      </div>
+   </div>
+    <!-- 评论 -->
+    
+  </div>
+</article>
+  </div>
+</div>
+
+
+
+<!-- 如果是home模式的话，不在首页就显示footer，如果不是home模式的话 所有都显示footer -->
+
+  <div class="footer-outer animate__animated  animate__fadeInUp">
+    <div class="footer-inner">
+    <div class="footer-text">
+    <p>Power by <a target="_blank" rel="noopener" href="http://hexo.io/">Liguangling</a> Theme by <a target="_blank" rel="noopener" href="https://github.com/FuShaoLei/hexo-theme-white">White</a></p>
+
+    </div>
+    <div class="footer-contact">
+    <ul class="footer-ul">
+        
+        <li class="footer-li">
+            <a href="https://github.com/FuShaoLei/hexo-theme-white" target="_blank">
+                <i class="ri-github-line"></i>
+            </a>
+        </li>
+        
+        <li class="footer-li">
+            <a href="mailto:1563250958@qq.com" target="_blank">
+                <i class="ri-mail-line"></i>
+            </a>
+        </li>
+        
+    </ul>
+    </div>
+    </div>
+</div>
+
+
+
+
+
+
+<script src="/js/white.js"></script>
+
+
+
+</body>
+</html>
