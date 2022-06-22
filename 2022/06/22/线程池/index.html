@@ -1,0 +1,197 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>   liguangling的博客</title>
+  <meta name="description" content="A minimalist theme for hexo.">
+  <!-- 标签页图标 -->
+  
+
+  <!-- 图标库 -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.2.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- 动画库 -->
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fushaolei/cdn-white@1.0/css/animate.css"/>
+  
+  <!-- css文件 -->
+  
+<link rel="stylesheet" href="/css/white.css">
+
+  <!-- 代码高亮 -->
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+
+<div class="menu-outer">
+    <div class="menu-inner">
+      <div class="menu-site-name  animate__animated  animate__fadeInUp">
+        <a href="/">
+          liguangling的博客
+        </a>
+        
+      </div>
+      <div class="menu-group">
+        <ul class="menu-ul">
+        
+          <a href="/archives" class="nav-link">
+            <li class="menu-li  animate__animated  animate__fadeInUp">
+              BLOG
+            </li>
+          </a>
+        
+        
+        
+          <li class="menu-li animate__animated  animate__fadeInUp" id="mobile-menu">
+            <i class="ri-menu-line"></i>
+          </li>
+        
+        </ul>
+
+      </div>
+
+    </div>
+</div>
+<div id="mobile-main" class="animate__animated  animate__fadeIn">
+  <div class="mobile-menu-inner">
+    <div class="mobile-menu-site-name animate__animated  animate__fadeInUp">
+      <a href="/">
+        liguangling的博客
+      </a>
+    </div>
+    <div class="mobile-menu-group" id="mobile-close">
+      <i class="ri-close-line"></i>
+    </div>
+
+  </div>
+
+  <div class="mobile-menu-div">
+  
+    <a href="/archives" class="mobile-nav-link">
+      <div class="mobile-menu-child animate__animated  animate__fadeInUp">
+        <span>BLOG</span>
+      </div>
+    </a>
+  
+  
+  </div>
+
+
+</div>
+
+<div class="body-outer">
+  <div class="body-inner">
+    
+<article class="post-inner">
+  <div class="post-content-outer">
+    <div class="post-intro">
+      <div class="post-title animate__animated  animate__fadeInUp"></div>
+      <div class="meta-intro animate__animated  animate__fadeInUp">Jun 22 2022</div>
+      
+    </div>
+    <div class="post-content-inner">
+      <div class="post-content-inner-space">
+
+      </div>
+      <div class="post-content-main animate__animated  animate__fadeInUp">
+        <!-- top型目录 -->
+        
+        <p>在 Java 语言中创建线程有两种方式，分别是实现 Runnable 接口或者 new Thread()就可以了，但是实际上创建线程可不仅是创建对象这么简单。创建对象仅仅是在 JVM 的堆分配一块内存而已；</p>
+<p>而创建线程还需要和操作系统内核的 API，然后操作系统还要为线程分配一系列资源。涉及内核切换，这个成本就很高。所以线程是一个重量级对象，要避免频繁的创建和销毁。</p>
+<p>所以问题来了，如何避免呢？那就是利用池化技术思想，线程池登场。</p>
+<h4 id="1-快速创建线程池"><a href="#1-快速创建线程池" class="headerlink" title="1. 快速创建线程池"></a>1. 快速创建线程池</h4><p>线程池的需求是如此普遍，所以 Java SDK 并发包自然也少不了它。Java 并发包里提供了一个线程池的静态工厂类 Executors，利用Executors你可以快速创建线程池。不过目前大厂的编码规范中基本上都不建议使用Executors了 。</p>
+<p>不建议使用的重要原因是：提供的很多方法默认使用的是无界的 LinkedBlockingQueue， 高负载情况下，无界队列很容易导致 OOM，一旦 OOM 会导致所有请求都无法处理。</p>
+<p>主要提供的工厂方法如下所示：</p>
+<ol>
+<li>newCachedThreadPool() 创建一个可缓存的线程池，调用 execute() 将重用以前构造的线程（如果线程可用）。如果没有可用的线程，则创建一个新线程并添加到池中。终止并从缓存中移除那些已有 60 秒钟未被使用的线程。</li>
+<li>newFiexedThreadPool(int Threads)：创建一个固定数量线程的线程池，并使用 LinkedBlockingQueue无界队列保存任务。</li>
+<li>newSingleThreadExecutor()：创建一个单线程化的 Executor。</li>
+<li>public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize)：创建一个支持定时及周期性的任务执行的线程池，多数情况下可用来替代 Timer 类。</li>
+</ol>
+<p>虽然这些方法不推荐使用 ，但是我们还是要了解为何不用，主要还是不能很好的去控制线程池的策略。以及队列类型。所以接下来我们介绍重要的 ThreadPoolExecutor来创建线程池。</p>
+<h4 id="2-ThreadPoolExecutor-合理创建线程池"><a href="#2-ThreadPoolExecutor-合理创建线程池" class="headerlink" title="2.ThreadPoolExecutor 合理创建线程池"></a>2.ThreadPoolExecutor 合理创建线程池</h4><p>ThreadPoolExecutor构造函数非常复杂，如下所示，这个最完备的构造函数有 7 个参数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public ThreadPoolExecutor(int corePoolSize,</span><br><span class="line">                              int maximumPoolSize,</span><br><span class="line">                              long keepAliveTime,</span><br><span class="line">                              TimeUnit unit,</span><br><span class="line">                              BlockingQueue&lt;Runnable&gt; workQueue,</span><br><span class="line">                              ThreadFactory threadFactory,</span><br><span class="line">                              RejectedExecutionHandler handler)</span><br></pre></td></tr></table></figure>
+
+<p>接下来我们一一介绍每个参数的含义。我们可以把线程池比拟为 一个项目组，线程就是项目组的成员</p>
+<ol>
+<li>corePoolSize：表示线程池保有的最小线程数。即使很闲也不能把人给撤了，至少要留 corePoolSize 个人坚守。</li>
+<li>maximumPoolSize：线程池创建的最大线程数。当项目很忙的时候，需要加人但是并不是无限制的加，最多加到 maximumPoolSize 个人，当项目闲下来的时候，就要撤走，最多能撤到 corePoolSize 个人。</li>
+<li>keepAliveTime &amp; unit：刚提到根据项目闲忙来增减人员，在 Java 这如何定义忙闲？就是通过一个线程如果在一段时间内都没有执行任务，说明很闲了。keepAliveTime &amp; unit 就是用来定义这个一段时间的参数。如果线程数大于 corePoolSize 且空闲了keepAliveTime &amp; unit这么久，那么这个空闲的线程就要被回收了。</li>
+<li>workQueue：工作队列，当前忙碌的线程数量达到了 corePoolSize且任务队列还没满的时候，新的任务会先被放到该队列中。</li>
+<li>threadFactory：通过这个参数你可以自定义如何创建线程，例如你可以给线程指定一个有意义的名字。</li>
+<li>handler：通过这个参数你可以自定义任务的拒绝策略。如果线程池中所有的线程都在忙碌，并且工作队列也满了（前提是工作队列是有界队列），那么此时提交任务，线程池就会拒绝接收。至于拒绝的策略，你可以通过 handler 这个参数来指定。ThreadPoolExecutor已经提供了以下 4 种策略。也可自定义拒绝策略，只要实现 RejectedExecutionHandler。</li>
+</ol>
+<p>Java 在 1.6 版本还增加了allowCoreThreadTimeOut(boolean value) 方法，它可以让所有线程都支持超时，这意味着如果项目很闲，就会将项目组的成员都撤走。</p>
+<ul>
+<li>CallerRunsPolicy：提交任务的线程自己去执行该任务。</li>
+<li>AbortPolicy：默认的拒绝策略，会throws RejectedExecutionException。</li>
+<li>DiscardPolicy：丢弃最老的任务，也就是把最早进入工作队列的任务丢掉，然后把新任务加到工作队列中。</li>
+</ul>
+<h4 id="3-代码实战"><a href="#3-代码实战" class="headerlink" title="3. 代码实战"></a>3. 代码实战</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">publicclass ThreadPoolExecutorDemo &#123;</span><br><span class="line">    // 创建一个线程池</span><br><span class="line">    private ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(4, 8</span><br><span class="line">            , 60, TimeUnit.SECONDS, new ArrayBlockingQueue&lt;&gt;(200), new NamedThreadFactory(&quot;my exec pool-&quot;, false),</span><br><span class="line">            new CustomizeDiscardPolicy());</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public void execute(Runnable runnable) &#123;</span><br><span class="line">        threadPoolExecutor.execute(runnable);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 自定义拒绝策略</span><br><span class="line">     */</span><br><span class="line">    publicstaticclass CustomizeDiscardPolicy implements RejectedExecutionHandler &#123;</span><br><span class="line"></span><br><span class="line">        public CustomizeDiscardPolicy() &#123;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) &#123;</span><br><span class="line">            System.out.println(&quot;Task &quot; + r.toString() + &quot; rejected from &quot; + executor.toString());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">publicclass ThreadPoolExecutorTest &#123;</span><br><span class="line">    @Test</span><br><span class="line">    public void testRun() &#123;</span><br><span class="line">        ThreadPoolExecutorDemo threadPoolExecutorDemo = new ThreadPoolExecutorDemo();</span><br><span class="line">        for (int i = 0; i &lt; 10; i++) &#123;</span><br><span class="line">            int finalI = i;</span><br><span class="line">            threadPoolExecutorDemo.execute(() -&gt; System.out.println(Thread.currentThread().getName() + finalI));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="4-总结"><a href="#4-总结" class="headerlink" title="4.总结"></a>4.总结</h4><p>线程池就是一种生产者-消费者模式， 线程池的使用方是生产者，线程池本身是消费者。</p>
+<p>至于设置多大的线程数量：</p>
+<ol>
+<li>对于 CPU 密集型的计算场景，理论上“线程的数量 &#x3D;CPU 核数”就是最合适的。不过在工程上，线程的数量一般会设置为“CPU 核数 +1”，这样的话，当线程因为偶尔的内存页失效或其他原因导致阻塞时，这个额外的线程可以顶上，从而保证 CPU 的利用率。</li>
+</ol>
+<p>最佳线程数 &#x3D;CPU 核数 * [ 1 +（I&#x2F;O 耗时 &#x2F; CPU 耗时）]。除此之外，其实 spring 也帮我们封装了线程池的创建，读者们可以查看 Spring Boot 实现异步调用 。</p>
+
+        <!-- 分类文章 -->
+        
+      </div>
+      <div class="post-content-inner-space">
+        
+      </div>
+   </div>
+    <!-- 评论 -->
+    
+  </div>
+</article>
+  </div>
+</div>
+
+
+
+<!-- 如果是home模式的话，不在首页就显示footer，如果不是home模式的话 所有都显示footer -->
+
+  <div class="footer-outer animate__animated  animate__fadeInUp">
+    <div class="footer-inner">
+    <div class="footer-text">
+    <p>Power by <a target="_blank" rel="noopener" href="http://hexo.io/">Liguangling</a> Theme by <a target="_blank" rel="noopener" href="https://github.com/FuShaoLei/hexo-theme-white">White</a></p>
+
+    </div>
+    <div class="footer-contact">
+    <ul class="footer-ul">
+        
+        <li class="footer-li">
+            <a href="https://github.com/FuShaoLei/hexo-theme-white" target="_blank">
+                <i class="ri-github-line"></i>
+            </a>
+        </li>
+        
+        <li class="footer-li">
+            <a href="mailto:1563250958@qq.com" target="_blank">
+                <i class="ri-mail-line"></i>
+            </a>
+        </li>
+        
+    </ul>
+    </div>
+    </div>
+</div>
+
+
+
+
+
+
+<script src="/js/white.js"></script>
+
+
+
+</body>
+</html>
