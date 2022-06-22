@@ -1,0 +1,183 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>  ReadWriteLock 读写锁实现一个缓存 |    liguangling的博客</title>
+  <meta name="description" content="A minimalist theme for hexo.">
+  <!-- 标签页图标 -->
+  
+
+  <!-- 图标库 -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.2.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- 动画库 -->
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fushaolei/cdn-white@1.0/css/animate.css"/>
+  
+  <!-- css文件 -->
+  
+<link rel="stylesheet" href="/css/white.css">
+
+  <!-- 代码高亮 -->
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+
+<div class="menu-outer">
+    <div class="menu-inner">
+      <div class="menu-site-name  animate__animated  animate__fadeInUp">
+        <a href="/">
+          liguangling的博客
+        </a>
+        
+      </div>
+      <div class="menu-group">
+        <ul class="menu-ul">
+        
+          <a href="/archives" class="nav-link">
+            <li class="menu-li  animate__animated  animate__fadeInUp">
+              BLOG
+            </li>
+          </a>
+        
+        
+        
+          <li class="menu-li animate__animated  animate__fadeInUp" id="mobile-menu">
+            <i class="ri-menu-line"></i>
+          </li>
+        
+        </ul>
+
+      </div>
+
+    </div>
+</div>
+<div id="mobile-main" class="animate__animated  animate__fadeIn">
+  <div class="mobile-menu-inner">
+    <div class="mobile-menu-site-name animate__animated  animate__fadeInUp">
+      <a href="/">
+        liguangling的博客
+      </a>
+    </div>
+    <div class="mobile-menu-group" id="mobile-close">
+      <i class="ri-close-line"></i>
+    </div>
+
+  </div>
+
+  <div class="mobile-menu-div">
+  
+    <a href="/archives" class="mobile-nav-link">
+      <div class="mobile-menu-child animate__animated  animate__fadeInUp">
+        <span>BLOG</span>
+      </div>
+    </a>
+  
+  
+  </div>
+
+
+</div>
+
+<div class="body-outer">
+  <div class="body-inner">
+    
+<article class="post-inner">
+  <div class="post-content-outer">
+    <div class="post-intro">
+      <div class="post-title animate__animated  animate__fadeInUp">ReadWriteLock 读写锁实现一个缓存</div>
+      <div class="meta-intro animate__animated  animate__fadeInUp">Jun 22 2022</div>
+      
+    </div>
+    <div class="post-content-inner">
+      <div class="post-content-inner-space">
+
+      </div>
+      <div class="post-content-main animate__animated  animate__fadeInUp">
+        <!-- top型目录 -->
+        
+        <p>实际工作中我们会遇到一种并发场景：读多写少，这个时候为了优化性能，我们就会使用缓存。针对读多写少这种并发场景，JavaSDK并发包提供了读写锁——ReentrantReadWriteLock，非常容易使用，并且性能很好。</p>
+<h4 id="什么是读写锁？"><a href="#什么是读写锁？" class="headerlink" title="什么是读写锁？"></a>什么是读写锁？</h4><p>读写锁遵循以下三个基本原则：</p>
+<ul>
+<li>允许多个线程同时读共享变量。</li>
+<li>只允许一个线程写共享变量。</li>
+<li>如果有一个线程正在执行写操作，此时禁止读线程读共享变量。</li>
+</ul>
+<p>读写锁与互斥锁的一个重要区别就是读写锁允许多个线程同时读共享变量，而互斥锁是不允许的，这是读写锁在读多写少场景下性能优于互斥锁的关键。但读写锁的写操作是互斥的，当一个线程在写共享变量的时候，是不允许其他线程执行写操作和读操作。</p>
+<h4 id="ReentrantReadWriteLock"><a href="#ReentrantReadWriteLock" class="headerlink" title="ReentrantReadWriteLock"></a>ReentrantReadWriteLock</h4><h5 id="ReentrantReadWriteLock-快速实现一个缓存工具类。"><a href="#ReentrantReadWriteLock-快速实现一个缓存工具类。" class="headerlink" title="ReentrantReadWriteLock 快速实现一个缓存工具类。"></a>ReentrantReadWriteLock 快速实现一个缓存工具类。</h5><p>首先声明一个 Cache&lt;K, V&gt; ，其中泛型 V 代表缓存的 value 类型，缓存的数据我们保存在 hashMap 中，不是线程安全的，这时候我们通过 ReentrantReadWriteLock 的读写锁来保证其线程安全，其次它也是可重入锁。很简单，写的时候上写锁，读取的时候上读锁。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">publicclass Cache&lt;K, V&gt; &#123;</span><br><span class="line"></span><br><span class="line">    privatefinal Map&lt;K, V&gt; DATA_MAP = new HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    privatefinal ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 读锁</span><br><span class="line">     */</span><br><span class="line">    privatefinal Lock readLock = readWriteLock.readLock();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 写锁</span><br><span class="line">     */</span><br><span class="line">    privatefinal Lock writeLock = readWriteLock.writeLock();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 读取缓存</span><br><span class="line">     * @param key</span><br><span class="line">     * @return</span><br><span class="line">     */</span><br><span class="line">    public V get(K key) &#123;</span><br><span class="line">        readLock.lock();</span><br><span class="line">        try &#123;</span><br><span class="line">            return DATA_MAP.get(key);</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            readLock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 写缓存</span><br><span class="line">     * @param key</span><br><span class="line">     * @param value</span><br><span class="line">     * @return</span><br><span class="line">     */</span><br><span class="line">    public V put(K key, V value) &#123;</span><br><span class="line">        writeLock.lock();</span><br><span class="line">        try &#123;</span><br><span class="line">            return DATA_MAP.put(key, value);</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            writeLock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    /**</span><br><span class="line">     * 清空缓存</span><br><span class="line">     */</span><br><span class="line">    public void clear() &#123;</span><br><span class="line">        writeLock.lock();</span><br><span class="line">        try &#123;</span><br><span class="line">            DATA_MAP.clear();</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            writeLock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="按需加载缓存"><a href="#按需加载缓存" class="headerlink" title="按需加载缓存"></a>按需加载缓存</h4><p>使用缓存首先要解决的就是初始化问题。对应数据量不大可以采取一次性加载，这种方式很简单。只需要在应用启动的时候把数据源头加载调用 put 方法。</p>
+<p>但是当数据量很大就需要按需加载了，也就是懒加载，指的是查询的时候数据不再缓存里面则加载对应数据并放到缓存。</p>
+<p>先上读锁，假如缓存存在则直接返回，否则尝试获取写锁并再次验证缓存是否存在 我们才去查询数据库并更新本地缓存。为什么要再次验证呢？</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">publicclass Cache&lt;String, V&gt; &#123;</span><br><span class="line"></span><br><span class="line">    privatefinal Map&lt;String, V&gt; DATA_MAP = new HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    privatefinal ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 读锁</span><br><span class="line">     */</span><br><span class="line">    privatefinal Lock readLock = readWriteLock.readLock();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 写锁</span><br><span class="line">     */</span><br><span class="line">    privatefinal Lock writeLock = readWriteLock.writeLock();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 读取缓存,若缓存不存在则查找数据库并放到缓存</span><br><span class="line">     * @param key</span><br><span class="line">     * @return</span><br><span class="line">     */</span><br><span class="line">    public V get(String key) &#123;</span><br><span class="line">        V value = null;</span><br><span class="line">        //读取缓存</span><br><span class="line">        readLock.lock(); // 1</span><br><span class="line">        try &#123;</span><br><span class="line">            value = DATA_MAP.get(key); //2</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            readLock.unlock(); // 3</span><br><span class="line">        &#125;</span><br><span class="line">        // 缓存中存在，直接返回</span><br><span class="line">        if (Objects.nonNull(value)) &#123; // 4</span><br><span class="line">            return value;</span><br><span class="line">        &#125;</span><br><span class="line">        writeLock.lock(); //5</span><br><span class="line">        try &#123;</span><br><span class="line">            // 再次验证是否为空，可能其他写线程已经查询过数据库写到缓存中了，后续再次获取到写锁的线程就不用再次查数据库</span><br><span class="line">            value = DATA_MAP.get(key); // 6</span><br><span class="line">            if (Objects.isNull(value)) &#123; // 7</span><br><span class="line">                //模拟查询数据库</span><br><span class="line">                value = (V) &quot;queryFromDB&quot;;</span><br><span class="line">                DATA_MAP.put(key, value);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            writeLock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">        return value;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>原因是在高并发的场景下，有可能会有多线程竞争写锁。假设缓存是空的，没有缓存任何东西，如果此时有三个线程 T1、T2 和 T3 同时调用 get() 方法，并且参数 key 也是相同的。那么它们会同时执行到代码 ⑤ 处，但此时只有一个线程能够获得写锁，假设是线程 T1，线程 T1 获取写锁之后查询数据库并更新缓存，最终释放写锁。此时线程 T2 和 T3 会再有一个线程能够获取写锁，假设是 T2，如果不采用再次验证的方式，此时 T2 会再次查询数据库。T2 释放写锁之后，T3 也会再次查询一次数据库。而实际上线程 T1 已经把缓存的值设置好了，T2、T3 完全没有必要再次查询数据库。所以，再次验证的方式，能够避免高并发场景下重复查询数据的问题。</p>
+<h4 id="读写锁的升级与降级"><a href="#读写锁的升级与降级" class="headerlink" title="读写锁的升级与降级"></a>读写锁的升级与降级</h4><p>首先来一个错误示范，获取读锁，发现缓存不存在，直接升级写锁，这个是错误的。虽然逻辑上没问题，但是 ReentrantReadWriteLock 并不支持这样升级。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">public V get(String key) &#123;</span><br><span class="line">        V value = null;</span><br><span class="line">        //读取缓存</span><br><span class="line">        readLock.lock(); // 1</span><br><span class="line">        try &#123;</span><br><span class="line">            value = DATA_MAP.get(key); //2</span><br><span class="line">            if (value == null) &#123; // 4</span><br><span class="line">            	w.lock();</span><br><span class="line">                try &#123;</span><br><span class="line">                  // 再次验证并更新缓存</span><br><span class="line">                  // 省略详细代码</span><br><span class="line">                &#125; finally&#123;</span><br><span class="line">                  w.unlock();</span><br><span class="line">                &#125;</span><br><span class="line">        	&#125;</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            readLock.unlock(); // 3</span><br><span class="line">        &#125;</span><br><span class="line">        // 缓存中存在，直接返回</span><br><span class="line">        if (Objects.nonNull(value)) &#123; // 4</span><br><span class="line">            return value;</span><br><span class="line">        &#125;</span><br><span class="line">        writeLock.lock(); //5</span><br><span class="line">        try &#123;</span><br><span class="line">            // 再次验证是否为空，可能其他写线程已经查询过数据库写到缓存中了，后续再次获取到写锁的线程就不用再次查数据库</span><br><span class="line">            value = DATA_MAP.get(key); // 6</span><br><span class="line">            if (Objects.isNull(value)) &#123; // 7</span><br><span class="line">                //模拟查询数据库</span><br><span class="line">                value = (V) &quot;queryFromDB&quot;;</span><br><span class="line">                DATA_MAP.put(key, value);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            writeLock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">        return value;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br></pre></td></tr></table></figure>
+
+<p>首先要注意的是，ReentrantReadWriteLock 不支持读锁直接升级写锁，也就是读锁还没有释放就去写锁，会导致写锁永久等待， 最终导致相关线程都被阻塞，永远也没有机会被唤醒。</p>
+<p>虽然锁升级不可以，但是锁降级是可以的。如下代码所示</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">public V get(String key) &#123;</span><br><span class="line">        readLock.lock();</span><br><span class="line">        System.out.println(&quot;开始读取缓存数据.....&quot; + Thread.currentThread().getName());</span><br><span class="line">        V value = DATA_MAP.get(key);</span><br><span class="line"></span><br><span class="line">        if (Objects.isNull(value)) &#123;</span><br><span class="line">            // 若 value 为空则先释放读锁，并且让该线程获取写锁，而其他线程只能等待该写锁释放</span><br><span class="line">            // 必须先释放读锁才能去获取写锁，读锁还没有释放，此时获取写锁，会导致写锁永久等待，最终导致相关线程都被阻塞，永远也没有机会被唤醒。锁的升级是不允许的，这个你一定要注意。</span><br><span class="line">            readLock.unlock();</span><br><span class="line">            writeLock.lock();</span><br><span class="line">            // 再次检查状态，因为其他线程可能已经获取到写锁且更新了状态</span><br><span class="line">            try &#123;</span><br><span class="line">                if (Objects.isNull(value)) &#123;</span><br><span class="line">                    //模拟查询数据库</span><br><span class="line">                    value = (V) &quot;queryFromDB&quot;;</span><br><span class="line">                    DATA_MAP.put(key, value);</span><br><span class="line">                &#125;</span><br><span class="line">                // 通过在释放写锁之前获取读锁来实现锁降级，降级为读锁</span><br><span class="line">                readLock.lock();</span><br><span class="line">            &#125; finally &#123;</span><br><span class="line">                // 释放写锁，依然持有读锁</span><br><span class="line">                writeLock.unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        //当前还持有读锁,所以最后还要释放读锁</span><br><span class="line">        try &#123;</span><br><span class="line">            System.out.println(Thread.currentThread().getName() + &quot;-- 读 : &#123;key:&quot; + key + &quot;,value: &quot; + value + &quot;&#125;&quot;);</span><br><span class="line">            return value;</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            System.out.println(&quot;结束读取缓存数据.....&quot; + Thread.currentThread().getName());</span><br><span class="line">            readLock.unlock();</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样当数据在缓存中的时候只需要上读锁，而当查询数据需要从数据库加载则释放读锁上写锁，然后操作数据，接着释放写锁降级为读锁，提高了并发吞吐量。</p>
+
+        <!-- 分类文章 -->
+        
+      </div>
+      <div class="post-content-inner-space">
+        
+      </div>
+   </div>
+    <!-- 评论 -->
+    
+  </div>
+</article>
+  </div>
+</div>
+
+
+
+<!-- 如果是home模式的话，不在首页就显示footer，如果不是home模式的话 所有都显示footer -->
+
+  <div class="footer-outer animate__animated  animate__fadeInUp">
+    <div class="footer-inner">
+    <div class="footer-text">
+    <p>Power by <a target="_blank" rel="noopener" href="http://hexo.io/">Liguangling</a> Theme by <a target="_blank" rel="noopener" href="https://github.com/FuShaoLei/hexo-theme-white">White</a></p>
+
+    </div>
+    <div class="footer-contact">
+    <ul class="footer-ul">
+        
+        <li class="footer-li">
+            <a href="https://github.com/FuShaoLei/hexo-theme-white" target="_blank">
+                <i class="ri-github-line"></i>
+            </a>
+        </li>
+        
+        <li class="footer-li">
+            <a href="mailto:1563250958@qq.com" target="_blank">
+                <i class="ri-mail-line"></i>
+            </a>
+        </li>
+        
+    </ul>
+    </div>
+    </div>
+</div>
+
+
+
+
+
+
+<script src="/js/white.js"></script>
+
+
+
+</body>
+</html>
