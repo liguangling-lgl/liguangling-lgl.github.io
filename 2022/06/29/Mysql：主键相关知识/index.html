@@ -1,0 +1,234 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>  Mysql：主键相关知识 |    liguangling的博客</title>
+  <meta name="description" content="A minimalist theme for hexo.">
+  <!-- 标签页图标 -->
+  
+
+  <!-- 图标库 -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.2.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- 动画库 -->
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fushaolei/cdn-white@1.0/css/animate.css"/>
+  
+  <!-- css文件 -->
+  
+<link rel="stylesheet" href="/css/white.css">
+
+  <!-- 代码高亮 -->
+  
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+
+<div class="menu-outer">
+    <div class="menu-inner">
+      <div class="menu-site-name  animate__animated  animate__fadeInUp">
+        <a href="/">
+          liguangling的博客
+        </a>
+        
+      </div>
+      <div class="menu-group">
+        <ul class="menu-ul">
+        
+          <a href="/archives" class="nav-link">
+            <li class="menu-li  animate__animated  animate__fadeInUp">
+              BLOG
+            </li>
+          </a>
+        
+        
+        
+          <li class="menu-li animate__animated  animate__fadeInUp" id="mobile-menu">
+            <i class="ri-menu-line"></i>
+          </li>
+        
+        </ul>
+
+      </div>
+
+    </div>
+</div>
+<div id="mobile-main" class="animate__animated  animate__fadeIn">
+  <div class="mobile-menu-inner">
+    <div class="mobile-menu-site-name animate__animated  animate__fadeInUp">
+      <a href="/">
+        liguangling的博客
+      </a>
+    </div>
+    <div class="mobile-menu-group" id="mobile-close">
+      <i class="ri-close-line"></i>
+    </div>
+
+  </div>
+
+  <div class="mobile-menu-div">
+  
+    <a href="/archives" class="mobile-nav-link">
+      <div class="mobile-menu-child animate__animated  animate__fadeInUp">
+        <span>BLOG</span>
+      </div>
+    </a>
+  
+  
+  </div>
+
+
+</div>
+
+<div class="body-outer">
+  <div class="body-inner">
+    
+<article class="post-inner">
+  <div class="post-content-outer">
+    <div class="post-intro">
+      <div class="post-title animate__animated  animate__fadeInUp">Mysql：主键相关知识</div>
+      <div class="meta-intro animate__animated  animate__fadeInUp">Jun 29 2022</div>
+      
+    </div>
+    <div class="post-content-inner">
+      <div class="post-content-inner-space">
+
+      </div>
+      <div class="post-content-main animate__animated  animate__fadeInUp">
+        <!-- top型目录 -->
+        
+        <h4 id="一、为什么主键不宜过长"><a href="#一、为什么主键不宜过长" class="headerlink" title="一、为什么主键不宜过长"></a>一、为什么主键不宜过长</h4><p>这个问题的点在「长」上。那「短」比「长」有什么优势？） 短不占空间。但这么点磁盘空间相对整个数据量来说微不足道，而且我们一般不怎么用到主键列。那么原因应该在「快」上，而且和原始数据关系不大。以此自然得出和「索引」相关，而且和索引读取相关。那么为什么长主键在「索引」中会影响性能？<br>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/2BBBF41A963D4D71A11EBF2A7FDE541E" >
+        </sapn>
+      </p>
+<p>上面是 Innodb 的索引数据结构。左边是「聚簇索引」，通过主键定位数据记录。右边是「二级索引」，对列数据做索引，通过列数据查找数据主键。如果通过二级索引查询数据，流程如图上所示，先从二级索引树上搜索到「主键」，然后在聚簇索引上通过主键搜索到数据行。其中二级索引的叶子节点是直接存储的主键值，而不是主键指针。所以如果主键太长，一个二级索引树所能存储的索引记录就会变少，这样在有限的「索引缓冲」中，需要读取磁盘的次数就会变多，所以性能就会下降。</p>
+<h4 id="二、为什么建议使用自增-ID"><a href="#二、为什么建议使用自增-ID" class="headerlink" title="二、为什么建议使用自增 ID"></a>二、为什么建议使用自增 ID</h4><p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/481C978923E44CF49B2CD9CFABFA248E" >
+        </sapn>
+      </p>
+<p>InnoDB 使用「聚簇索引」，如上图所示，数据记录本身被存于主索引（一颗 B+Tree）的叶子节点上。这就要求同一个叶子节点内（大小为一个内存页或磁盘页）的各条数据记录「按主键顺序存放」，因此每当有一条新的记录插入时，MySQL 会根据其主键将其插入适当的节点和位置，如果页面达到装载因子（InnoDB 默认为 15&#x2F;16），则开辟一个新的页（节点）。</p>
+<p>如果表使用自增主键，那么每次插入新的记录，记录就会「顺序添加」到当前索引节点的后续位置，当一页写满，就会自动开辟一个新的页。这样就会形成一个「紧凑」的索引结构，近似顺序填满。由于每次插入时也不需要移动已有数据，因此效率很高，也不会增加很多开销在维护索引上，如下图左侧所示。否则由于每次插入主键的值近似于随机，因此每次新记录都要被插到现有索引页的中间某个位置，MySQL 不得不为了将新记录插到合适位置而「移动数据」，如下图右侧所示，这样就造成了一定的开销。由于此，Mysql 为维护索引可能需要频繁的刷新缓冲，增加了方法磁盘 IO 的次数，而且时常需要对索引结构进行重组织。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="/56F32E486DF34B538835B51F8C49C5A3" >
+        </sapn>
+      </p>
+<h4 id="三、业务-Key-VS-逻辑-Key"><a href="#三、业务-Key-VS-逻辑-Key" class="headerlink" title="三、业务 Key VS 逻辑 Key"></a>三、业务 Key VS 逻辑 Key</h4><p>「业务 Key」，即使用具有业务意义的 id 作为 Key，比如使用订单流水号作为订单表的主键 Key。「逻辑 Key」，即无关业务的 Key，按某种规则生成 Key，如自增 Key。</p>
+<h5 id="业务-Key-的优点"><a href="#业务-Key-的优点" class="headerlink" title="业务 Key 的优点"></a>业务 Key 的优点</h5><ul>
+<li>Key 具有业务意义，在查询时可以直接作为搜索关键字使用</li>
+<li>不需要额外的列和索引空间</li>
+<li>可以减少一些 join 操作。</li>
+</ul>
+<h5 id="业务-Key-的缺点"><a href="#业务-Key-的缺点" class="headerlink" title="业务 Key 的缺点"></a>业务 Key 的缺点</h5><ul>
+<li>当业务发生变化时，有时需要变更主键</li>
+<li>涉及多列 Key 时比较难操作</li>
+<li>业务 Key 往往比较长，所占空间更大，导致更大的磁盘 IO</li>
+<li>在 Key 确定前不能持久化数据，有时我们没有在确定数据 Key 时，就想先添加一条记录，之后再更新业务 Key</li>
+<li>设计一个兼具易用和性能的 Key 生成方案比较难</li>
+</ul>
+<h5 id="逻辑-Key-的优点"><a href="#逻辑-Key-的优点" class="headerlink" title="逻辑 Key 的优点"></a>逻辑 Key 的优点</h5><ul>
+<li>不会因为业务的变动而需要修改 Key 逻辑</li>
+<li>操作简单，且易于管理</li>
+<li>逻辑 Key 往往更小，性能更优</li>
+<li>逻辑 Key 更容易保证唯一性</li>
+<li>更易于优化</li>
+</ul>
+<h5 id="逻辑-Key-缺点"><a href="#逻辑-Key-缺点" class="headerlink" title="逻辑 Key 缺点"></a>逻辑 Key 缺点</h5><ul>
+<li>查询主键列和主键索引需要额外的磁盘空间</li>
+<li>在插入数据和更新数据时需要额外的 IO</li>
+<li>更多的 join 可能</li>
+<li>如果没有唯一性策略限制，容易出现重复的 Key</li>
+<li>测试环境和正式环境 Key 不一致，不利于排查问题</li>
+<li>Key 的值没有和数据关联，不符合三范式</li>
+<li>不能用于搜索关键字</li>
+<li>依赖不同数据库系统的具体实现，不利于底层数据库的替换</li>
+</ul>
+<h4 id="四、主键生成"><a href="#四、主键生成" class="headerlink" title="四、主键生成"></a>四、主键生成</h4><p>一般情况下，我们都使用 Mysql 的自增 ID，来作为表的「主键」，这样简单，而且从上面讲到的来看，性能也是最好的。但是在分库分表的情况情况下，自增 ID 则不能满足需求。我们可以来看看不同数据库生成 ID 的方式，也看一些分布式 ID 生成方案。利于我们思考甚至实现自己的分布式 ID 生成服务。</p>
+<h5 id="数据库的实现"><a href="#数据库的实现" class="headerlink" title="数据库的实现"></a>数据库的实现</h5><h5 id="Mysql-自增"><a href="#Mysql-自增" class="headerlink" title="Mysql 自增"></a>Mysql 自增</h5><p>Mysql 在内存中维护一个「自增计数器」，每次访问 auto-increment 计数器的时候， InnoDB 都会加上一个名为「AUTO-INC 锁」直到该语句结束(注意锁只持有到语句结束,不是事务结束)。AUTO-INC 锁是一个特殊的表级别的锁，用来提升包含 auto_increment 列的并发插入性。</p>
+<p>在分布式的情况下，其实可以独立一个服务和数据库来做 id 生成，依旧依赖 Mysql 的表 id 自增能力来为第三方服务统一生成 id。为性能考虑可以不同业务使用不同的表。</p>
+<h5 id="Mongodb-ObjectId"><a href="#Mongodb-ObjectId" class="headerlink" title="Mongodb ObjectId"></a>Mongodb ObjectId</h5><p>Mongodb 为防止主键冲突，设计了一个 ObjectId 作为主键 id。它由一个 12 字节的十六进制数字组成，其中包含以下几部分：</p>
+<ul>
+<li><p>Time：时间戳。4 字节。秒级。</p>
+</li>
+<li><p>Machine：机器标识。3 字节。一般是机器主机名的散列值，这样就确保了不同主机生成不同的机器 hash 值，确保在分布式中不造成冲突，同一台机器的值相同。</p>
+</li>
+<li><p>PID：进程 ID。2 字节。上面的 Machine 是为了确保在不同机器产生的 objectId 不冲突，而 pid 就是为了在同一台机器不同的 mongodb 进程产生的 objectId 不冲突。</p>
+</li>
+<li><p>INC：自增计数器。3 字节。前面的九个字节保证了一秒内不同机器不同进程生成的 objectId 不冲突，自增计数器，用来确保在同一秒内产生的 objectId 也不会发现冲突，允许 256 的 3 次方等于 16777216 条记录的唯一性。</p>
+</li>
+</ul>
+<h5 id="Cassandra-TimeUUID"><a href="#Cassandra-TimeUUID" class="headerlink" title="Cassandra TimeUUID"></a>Cassandra TimeUUID</h5><h5 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h5><ol>
+<li>Zookeeper 自增：通过 zk 的自增机制实现。</li>
+<li>Redis 自增：通过 Redis 的自增机制实现。</li>
+<li>UUID：使用 UUID 字符串作为 Key。</li>
+<li>snowflake 算法：和 Mongodb 的实现类似，1位符号位 + 41位时间戳（毫秒级）+ 10位数据机器位 + 12位毫秒内的序列。</li>
+</ol>
+<h5 id="开源实现"><a href="#开源实现" class="headerlink" title="开源实现"></a>开源实现</h5><ol>
+<li>百度 UidGenerator：基于「snowflake」算法。</li>
+<li>美团 Leaf：同时实现了基于 Mysql 自增（优化）和 snowflake 算法的机制。</li>
+</ol>
+
+        <!-- 分类文章 -->
+        
+      </div>
+      <div class="post-content-inner-space">
+        
+      </div>
+   </div>
+    <!-- 评论 -->
+    
+  </div>
+</article>
+  </div>
+</div>
+
+
+
+<!-- 如果是home模式的话，不在首页就显示footer，如果不是home模式的话 所有都显示footer -->
+
+  <div class="footer-outer animate__animated  animate__fadeInUp">
+    <div class="footer-inner">
+    <div class="footer-text">
+    <p>Power by <a target="_blank" rel="noopener" href="http://hexo.io/">Liguangling</a> Theme by <a target="_blank" rel="noopener" href="https://github.com/FuShaoLei/hexo-theme-white">White</a></p>
+
+    </div>
+    <div class="footer-contact">
+    <ul class="footer-ul">
+        
+        <li class="footer-li">
+            <a href="https://github.com/FuShaoLei/hexo-theme-white" target="_blank">
+                <i class="ri-github-line"></i>
+            </a>
+        </li>
+        
+        <li class="footer-li">
+            <a href="mailto:1563250958@qq.com" target="_blank">
+                <i class="ri-mail-line"></i>
+            </a>
+        </li>
+        
+    </ul>
+    </div>
+    </div>
+</div>
+
+
+
+
+
+
+<script src="/js/white.js"></script>
+
+
+
+</body>
+</html>
