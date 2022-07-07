@@ -136,10 +136,9 @@
 <p>Redis 2.6.X 之后，官方拓展了 SET 命令的参数，满足了当 key 不存在则设置 value，同时设置超时时间的语义，并且满足原子性。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/289FC617B12544949494209E41AFBA2D" >
-        </sapn>
-      </p>
+        <img data-src="/289FC617B12544949494209E41AFBA2D">
+        
+      </span></p>
 <ul>
 <li>NX：表示只有 resource_name 不存在的时候才能 SET 成功，从而保证只有一个客户端可以获得锁；</li>
 <li>PX 30000：表示这个锁有一个 30 秒自动过期时间。</li>
@@ -156,18 +155,16 @@
 <p>我在加锁的时候设置一个「唯一标识」作为 value 代表加锁的客户端。SET resource_name random_value NX PX 30000在释放锁的时候，客户端将自己的「唯一标识」与锁上的「标识」比较是否相等，匹配上则删除，否则没有权利释放锁。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/BC57770001514AA98E5370539BF079FF" >
-        </sapn>
-      </p>
+        <img data-src="/BC57770001514AA98E5370539BF079FF">
+        
+      </span></p>
 <p>这是 GET + DEL 指令组合而成的，这里又会涉及到原子性问题。</p>
 <p>可以通过 Lua 脚本来实现，这样判断和删除的过程就是原子操作了。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/E68E96C997A542DB9D24E246F47D7DAA" >
-        </sapn>
-      </p>
+        <img data-src="/E68E96C997A542DB9D24E246F47D7DAA">
+        
+      </span></p>
 <p>这样通过唯一值设置成 value 标识加锁的客户端很重要，仅使用 DEL 是不安全的，因为一个客户端可能会删除另一个客户端的锁。</p>
 <p>使用上面的脚本，每个锁都用一个随机字符串“签名”，只有当删除锁的客户端的“签名”与锁的 value 匹配的时候，才会删除它。</p>
 <p>官方文档也是这么说的：<a target="_blank" rel="noopener" href="https://redis.io/topics/distlock">https://redis.io/topics/distlock</a></p>
@@ -184,10 +181,9 @@
 </ol>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/337CC1B37367497EA0A9228971C0D810" >
-        </sapn>
-      </p>
+        <img data-src="/337CC1B37367497EA0A9228971C0D810">
+        
+      </span></p>
 <p>这个方案实际上已经比较完美，但是还远远不够</p>
 <ol>
 <li>可重入锁如何实现？</li>
@@ -197,10 +193,9 @@
 <h4 id="加解锁代码位置有讲究"><a href="#加解锁代码位置有讲究" class="headerlink" title="加解锁代码位置有讲究"></a>加解锁代码位置有讲究</h4><p>根据前面的分析，我们已经有了一个「相对严谨」的分布式锁了。就写了如下代码将分布式锁运用到项目中，以下是伪代码逻辑：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/11F23BEC02FE48B6B717871B17D821E1" >
-        </sapn>
-      </p>
+        <img data-src="/11F23BEC02FE48B6B717871B17D821E1">
+        
+      </span></p>
 <p>一旦执行业务逻辑过程中抛出异常，程序就无法执行释放锁的流程。</p>
 <p>所以释放锁的代码一定要放在 finally{} 块中。</p>
 <p>加锁的位置也有问题，放在 try 外面的话，如果执行 redisLock.lock() 加锁异常，但是实际指令已经发送到服务端并执行，只是客户端读取响应超时，就会导致没有机会执行解锁的代码。</p>
@@ -208,18 +203,16 @@
 <p>综上所述，正确代码位置如下 ：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/8AACC22C6F0E4715827E06731876BC89" >
-        </sapn>
-      </p>
+        <img data-src="/8AACC22C6F0E4715827E06731876BC89">
+        
+      </span></p>
 <h5 id="可重入锁要如何实现呢？"><a href="#可重入锁要如何实现呢？" class="headerlink" title="可重入锁要如何实现呢？"></a>可重入锁要如何实现呢？</h5><p>当一个线程执行一段代码成功获取锁之后，继续执行时，又遇到加锁的代码，可重入性就就保证线程能继续执行，而不可重入就是需要等待锁释放之后，再次获取锁成功，才能继续往下执行。</p>
 <p>用一段代码解释可重入：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/55834B07353444EAA9C0982DFAB514FB" >
-        </sapn>
-      </p>
+        <img data-src="/55834B07353444EAA9C0982DFAB514FB">
+        
+      </span></p>
 <p>假设 X 线程在 a 方法获取锁之后，继续执行 b 方法，如果此时不可重入，线程就必须等待锁释放，再次争抢锁。</p>
 <p>锁明明是被 X 线程拥有，却还需要等待自己释放锁，然后再去抢锁，这看起来就很奇怪，我释放我自己~</p>
 <h5 id="Redis-Hash-可重入锁"><a href="#Redis-Hash-可重入锁" class="headerlink" title="Redis Hash 可重入锁"></a>Redis Hash 可重入锁</h5><p>Redisson 类库就是通过 Redis Hash 来实现可重入锁</p>
@@ -230,17 +223,15 @@
 <p>我们可以使用 Redis hash 结构实现，key 表示被锁的共享资源， hash 结构的 fieldKey 的 value 则保存加锁的次数。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/270D337F34FB4F8480C2BAE659325A8B" >
-        </sapn>
-      </p>
+        <img data-src="/270D337F34FB4F8480C2BAE659325A8B">
+        
+      </span></p>
 <p>通过 Lua 脚本实现原子性，假设 KEYS1 &#x3D; 「lock」, ARGV「1000，uuid」：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/B1F13D2C80C94E2BB503641F5E1926B9" >
-        </sapn>
-      </p>
+        <img data-src="/B1F13D2C80C94E2BB503641F5E1926B9">
+        
+      </span></p>
 <p>加锁代码首先使用 Redis exists 命令判断当前 lock 这个锁是否存在。</p>
 <p>如果锁不存在的话，直接使用 hincrby创建一个键为 lock hash 表，并且为 Hash 表中键为 uuid 初始化为 0，然后再次加 1，最后再设置过期时间。</p>
 <p>如果当前锁存在，则使用 hexists判断当前 lock 对应的 hash 表中是否存在 uuid 这个键，如果存在，再次使用 hincrby 加 1，最后再次设置过期时间。</p>
@@ -248,10 +239,9 @@
 <p>解锁逻辑：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/B9F1BAFCDA0A4E6EB12FDC6216652CE6" >
-        </sapn>
-      </p>
+        <img data-src="/B9F1BAFCDA0A4E6EB12FDC6216652CE6">
+        
+      </span></p>
 <p>首先使用 hexists 判断 Redis Hash 表是否存给定的域。</p>
 <p>如果 lock 对应 Hash 表不存在，或者 Hash 表不存在 uuid 这个 key，直接返回 nil。</p>
 <p>若存在的情况下，代表当前锁被其持有，首先使用 hincrby使可重入次数减 1 ，然后判断计算之后可重入次数，若小于等于 0，则使用 del 删除这把锁。</p>

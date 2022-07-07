@@ -105,10 +105,9 @@
 <p>磁盘调用栈图</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/B4CEC477274C4DB49EF17770DDB43F4C" >
-        </sapn>
-      </p>
+        <img data-src="/B4CEC477274C4DB49EF17770DDB43F4C">
+        
+      </span></p>
 <p>内存操作</p>
 <p>内存直接由 CPU 控制，也就是 CPU 内部集成的内存控制器，所以说内存是直接与 CPU 对接，享受与 CPU 通信的最优带宽。</p>
 <p>Redis 将数据存储在内存中，读写操作不会因为磁盘的 IO 速度限制，所以速度飞一般的感觉！</p>
@@ -125,18 +124,16 @@
 <p>不同数据类型使用不同的数据结构速度才得以提升。每种数据类型都有一种或者多种数据结构来支撑，底层数据结构有 6 种。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/B40EDBA1B8FF417DA96660152B5EE9D0" >
-        </sapn>
-      </p>
+        <img data-src="/B40EDBA1B8FF417DA96660152B5EE9D0">
+        
+      </span></p>
 <p>Redis hash 字典</p>
 <p>Redis 整体就是一个 哈希表来保存所有的键值对，无论数据类型是 5 种的任意一种。哈希表，本质就是一个数组，每个元素被叫做哈希桶，不管什么数据类型，每个桶里面的 entry 保存着实际具体值的指针。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/C08FC874D3474BC2A9113CD71F3BD782" >
-        </sapn>
-      </p>
+        <img data-src="/C08FC874D3474BC2A9113CD71F3BD782">
+        
+      </span></p>
 <p>整个数据库就是一个全局哈希表，而哈希表的时间复杂度是 O(1)，只需要计算每个键的哈希值，便知道对应的哈希桶位置，定位桶里面的 entry 找到对应数据，这个也是 Redis 快的原因之一。</p>
 <p>那 Hash 冲突怎么办？</p>
 <p>当写入 Redis 的数据越来越多的时候，哈希冲突不可避免，会出现不同的 key 计算出一样的哈希值。</p>
@@ -154,10 +151,9 @@
 <p>C 语言字符串结构与 SDS 字符串结构对比图如下所示：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/717E051490A64DFE84EA56F70ED63F05" >
-        </sapn>
-      </p>
+        <img data-src="/717E051490A64DFE84EA56F70ED63F05">
+        
+      </span></p>
 <p>SDS 与 C 字符串区别<br>O(1) 时间复杂度获取字符串长度</p>
 <p>C 语言字符串布吉路长度信息，需要遍历整个字符串时间复杂度为 O(n)，C 字符串遍历时遇到 ‘\0’ 时结束。</p>
 <p>SDS 中 len 保存这字符串的长度，O(1) 时间复杂度。</p>
@@ -175,24 +171,21 @@
 <p>ziplist 在表头有三个字段 zlbytes、zltail 和 zllen，分别表示列表占用字节数、列表尾的偏移量和列表中的 entry 个数；压缩列表在表尾还有一个 zlend，表示列表结束。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/653D1614CDDA4A0C9691BE8FB9424405" >
-        </sapn>
-      </p>
+        <img data-src="/653D1614CDDA4A0C9691BE8FB9424405">
+        
+      </span></p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/D020321F8C2341E996CB8A2F07D08884" >
-        </sapn>
-      </p>
+        <img data-src="/D020321F8C2341E996CB8A2F07D08884">
+        
+      </span></p>
 <p>如果我们要查找定位第一个元素和最后一个元素，可以通过表头三个字段的长度直接定位，复杂度是 O(1)。而查找其他元素时，就没有这么高效了，只能逐个查找，此时的复杂度就是 O(N)</p>
 <p>双端列表<br>Redis List 数据类型通常被用于队列、微博关注人时间轴列表等场景。不管是先进先出的队列，还是先进后出的栈，双端列表都很好的支持这些特性。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/632CD4461C204794848EBD090FD39D19" >
-        </sapn>
-      </p>
+        <img data-src="/632CD4461C204794848EBD090FD39D19">
+        
+      </span></p>
 <p>Redis 的链表实现的特性可以总结如下：</p>
 <ul>
 <li>双端：链表节点带有 prev 和 next 指针，获取某个节点的前置节点和后置节点的复杂度都是 O（1）。</li>
@@ -204,10 +197,9 @@
 <p>quicklist 是 ziplist 和 linkedlist 的混合体，它将 linkedlist 按段切分，每一段使用 ziplist 来紧凑存储，多个 ziplist 之间使用双向指针串接起来。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/8491F39F12924DAB9CBEB370315E2AC3" >
-        </sapn>
-      </p>
+        <img data-src="/8491F39F12924DAB9CBEB370315E2AC3">
+        
+      </span></p>
 <p>这也是为何 Redis 快的原因，不放过任何一个可以提升性能的细节。</p>
 <p>skipList 跳跃表<br>sorted set 类型的排序功能便是通过「跳跃列表」数据结构来实现。</p>
 <p>跳跃表（skiplist）是一种有序数据结构，它通过在每个节点中维持多个指向其他节点的指针，从而达到快速访问节点的目的。</p>
@@ -215,18 +207,16 @@
 <p>跳表在链表的基础上，增加了多层级索引，通过索引位置的几个跳转，实现数据的快速定位，如下图所示：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/483F216561BC432DBCFF521DDC9419A8" >
-        </sapn>
-      </p>
+        <img data-src="/483F216561BC432DBCFF521DDC9419A8">
+        
+      </span></p>
 <p>当需要查找 40 这个元素需要经历 三次查找。</p>
 <p>整数数组（intset）<br>当一个集合只包含整数值元素，并且这个集合的元素数量不多时，Redis 就会使用整数集合作为集合键的底层实现。结构如下：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/AD85D54373934793B200B0927FA5738C" >
-        </sapn>
-      </p>
+        <img data-src="/AD85D54373934793B200B0927FA5738C">
+        
+      </span></p>
 <p>contents 数组是整数集合的底层实现：整数集合的每个元素都是 contents 数组的一个数组项（item），各个项在数组中按值的大小从小到大有序地排列，并且数组中不包含任何重复项。length 属性记录了整数集合包含的元素数量，也即是 contents 数组的长度。</p>
 <p>合理的数据编码<br>Redis 使用对象（redisObject）来表示数据库中的键值，当我们在 Redis 中创建一个键值对时，至少创建两个对象，一个对象是用做键值对的键对象，另一个是键值对的值对象。</p>
 <p>例如我们执行 SET MSG XXX 时，键值对的键是一个包含了字符串“MSG“的对象，键值对的值对象是包含字符串”XXX”的对象。</p>

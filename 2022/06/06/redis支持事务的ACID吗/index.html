@@ -129,18 +129,16 @@
 </ul>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/7082764785944615835E3707B9631F91" >
-        </sapn>
-      </p>
+        <img data-src="/7082764785944615835E3707B9631F91">
+        
+      </span></p>
 <p>可以看到每个读写指令执行后的返回结果都是 QUEUED，表示写操作都被暂存到了命令队列，还没有实际执行。当执行了 EXEC 命令，就可以看到具体每个指令的响应数据。</p>
 <p>通过 MULTI 和 DISCARD丢弃队列命令：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/D704A64301AE472E94301BB7FACAE08F" >
-        </sapn>
-      </p>
+        <img data-src="/D704A64301AE472E94301BB7FACAE08F">
+        
+      </span></p>
 <h3 id="Redis-事务满足-ACID吗？"><a href="#Redis-事务满足-ACID吗？" class="headerlink" title="Redis 事务满足 ACID吗？"></a>Redis 事务满足 ACID吗？</h3><p>Redis 事务可以一次执行多个命令， 并且带有以下三个重要的保证：</p>
 <ol>
 <li>批量指令在执行 EXEC 命令之前会放入队列暂存；</li>
@@ -160,10 +158,9 @@
 <p>如下是指令入队发生错误，导致事务失败的例子：</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/31174C8142274844B35D6582CAF5C589" >
-        </sapn>
-      </p>
+        <img data-src="/31174C8142274844B35D6582CAF5C589">
+        
+      </span></p>
 <ul>
 <li>在执行 EXEC 命令后，命令可能会失败：</li>
 </ul>
@@ -200,26 +197,23 @@
 <p>同时，客户端可以再次执行事务，此时，如果没有并发修改事务数据的操作了，事务就能正常执行，隔离性也得到了保证。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/A23EEC083D5A497CAC41FB45CBC5CF26" >
-        </sapn>
-      </p>
+        <img data-src="/A23EEC083D5A497CAC41FB45CBC5CF26">
+        
+      </span></p>
 <p>如果没有 WATCH 机制， 在 EXEC 命令执行前的并发操作对数据读写。</p>
 <p>当执行 EXEC 的时候，事务内部要操作的数据已经改变，Redis 并没有做到事务之间的隔离。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/925AAE5CEB73406AB3033CBC0C8CB097" >
-        </sapn>
-      </p>
+        <img data-src="/925AAE5CEB73406AB3033CBC0C8CB097">
+        
+      </span></p>
 <p>第二种情况，因为 Redis 是用单线程执行命令，而且，EXEC 命令执行后，Redis 会保证先把命令队列中的所有命令执行完再执行之后的指令。</p>
 <p>所以，在这种情况下，并发操作不会破坏事务的隔离性。</p>
 <p>
         <span class="lazyload-img-span">
-        <img   
-           data-src="/B970FB7BCEFA457B87B4125382EEE70C" >
-        </sapn>
-      </p>
+        <img data-src="/B970FB7BCEFA457B87B4125382EEE70C">
+        
+      </span></p>
 <h4 id="持久性"><a href="#持久性" class="headerlink" title="持久性"></a>持久性</h4><p>如果 Redis 没有使用 RDB 或 AOF，那么事务的持久化属性肯定得不到保证。</p>
 <p>如果 Redis 使用了 RDB 模式，那么，在一个事务执行后，而下一次的 RDB 快照还未执行前，如果发生了实例宕机，数据丢失，这种情况下，事务修改的数据也是不能保证持久化的。</p>
 <p>如果 Redis 采用了 AOF 模式，因为 AOF 模式的三种配置选项 no、everysec 和 always 都会存在数据丢失的情况。</p>
